@@ -9,8 +9,13 @@ import time
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 from tqdm import tqdm  # Import tqdm for the progress bar
 
+from .display import print_language_percentages
 from .query import get_value_labels, get_properties_and_values, get_property_labels
-from .scores import calculate_language_percentage
+from .scores import (
+    calculate_language_percentage,
+    calculate_language_percentages,
+    calculate_language_percentage_for_languages,
+)
 
 
 def calculate_multilinguality_scores(identifiers, language_codes=None):
@@ -26,11 +31,8 @@ def calculate_multilinguality_scores(identifiers, language_codes=None):
 
     Notes:
         This function calculates the multilinguality scores of the Wikidata (or Wikibase) items
-        and prints the values for the given language codes (by default: en)
+        and prints the values for the given language codes (by default: all available languages)
     """
-    if language_codes is None:
-        language_codes = ["en"]
-
     for item_id in identifiers:
         print("For Wikidata (Wikibase) item:", item_id)
 
@@ -52,28 +54,47 @@ def calculate_multilinguality_scores(identifiers, language_codes=None):
             )  # Unique value URIs (IRIs)
 
             # Step 2: Get property labels
-            language = "ml"
+            percentages = None
             property_labels_results = get_property_labels(property_uris)
-            for language in language_codes:
-                percentage = calculate_language_percentage(
-                    property_labels_results, language
+            if language_codes is None:
+                percentages = calculate_language_percentages(property_labels_results)
+            else:
+                percentages = calculate_language_percentage_for_languages(
+                    property_labels_results, language_codes
                 )
-                print(
-                    f"The percentage of properties in {language} is {percentage:.2f}%"
-                )
+            print_language_percentages(
+                percentages, "Language Percentages for property labels"
+            )
 
             # Add a delay to avoid hitting the rate limit
             time.sleep(1)  # Sleep for 1 second
 
             # Step 3: Get value labels
             value_labels_results = get_value_labels(value_uris)
-            for language in language_codes:
-                percentage = calculate_language_percentage(
-                    value_labels_results, language
+            if language_codes is None:
+                percentages = calculate_language_percentages(value_labels_results)
+            else:
+                percentages = calculate_language_percentage_for_languages(
+                    value_labels_results, language_codes
                 )
-                print(
-                    f"The percentage of property values in {language} is {percentage:.2f}%"
+            print_language_percentages(
+                percentages, "Language Percentages for property value labels"
+            )
+
+            # Step 4: Get combined results
+            combined_results = []
+            combined_results = combined_results + property_labels_results
+            combined_results = combined_results + value_labels_results
+            if language_codes is None:
+                percentages = calculate_language_percentages(combined_results)
+            else:
+                percentages = calculate_language_percentage_for_languages(
+                    combined_results, language_codes
                 )
+            print_language_percentages(
+                percentages,
+                "Combined Language Percentages for property label and property value labels",
+            )
 
         else:
             print("No properties and values found for the item.")
