@@ -22,6 +22,23 @@ Example:
 python3 -m mlscores Q5 -l en fr es pt 
 ```
 
+Output (on October 12, 2024):
+```bash
+    Combined Language    
+Percentages for property 
+label and property value 
+         labels          
+
+┏━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Language ┃ Percentage ┃
+┡━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ en       │     99.40% │
+│ fr       │     96.39% │
+│ es       │     92.17% │
+│ pt       │     71.08% │
+└──────────┴────────────┘
+```
+
 ## Output
 
 The package generates three types of output:
