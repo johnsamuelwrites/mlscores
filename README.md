@@ -39,6 +39,8 @@ label and property value
 └──────────┴────────────┘
 ```
 
+For more usage examples, see [USAGE.md](USAGE.md).
+
 ## Output
 
 The package generates three types of output:
