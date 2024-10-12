@@ -32,9 +32,74 @@ def get_properties_and_values(item_id):
     """
     sparql.setQuery(
         f"""
-    SELECT?p?v WHERE {{
-      wd:{item_id}?p?v.
+    SELECT?property ?value WHERE {{
+      wd:{item_id}?property ?value.
     }}
+    """
+    )
+    sparql.setReturnFormat(JSON)
+
+    # Execute the query with retry mechanism
+    return safe_query(sparql)
+
+
+def get_qualifier_properties_and_values(item_id):
+    """
+    Retrieve qualifier properties and values for a given Wikidata item.
+
+    This function takes a Wikidata item ID and returns its qualifier properties and values using a SPARQL query.
+
+    Args:
+        item_id (str): The ID of the Wikidata item to retrieve properties for.
+
+    Returns:
+        The result of the SPARQL query, or None if the query fails.
+
+    Notes:
+        This function uses the `safe_query` function to execute the SPARQL query with retry mechanism.
+    """
+    sparql.setQuery(
+        f"""
+        SELECT DISTINCT ?property ?value WHERE {{
+              wd:{item_id} ?p ?statement.
+              ?statement ?pq ?qualifierValue.
+              ?qualifierProperty wikibase:qualifier ?pq.
+              BIND(?qualifierProperty AS ?property)
+              BIND(?qualifierValue AS ?value)
+        }}
+    """
+    )
+    sparql.setReturnFormat(JSON)
+
+    # Execute the query with retry mechanism
+    return safe_query(sparql)
+
+
+def get_reference_properties_and_values(item_id):
+    """
+    Retrieve reference properties and values for a given Wikidata item.
+
+    This function takes a Wikidata item ID and returns its reference properties and values using a SPARQL query.
+
+    Args:
+        item_id (str): The ID of the Wikidata item to retrieve properties for.
+
+    Returns:
+        The result of the SPARQL query, or None if the query fails.
+
+    Notes:
+        This function uses the `safe_query` function to execute the SPARQL query with retry mechanism.
+    """
+    sparql.setQuery(
+        f"""
+        SELECT DISTINCT ?property ?value WHERE {{
+              wd:{item_id} ?p ?statement.
+              ?statement prov:wasDerivedFrom ?referenceNode.
+              ?referenceNode ?pr ?referenceValue.
+              ?referenceProperty wikibase:reference ?pr.
+              BIND(?referenceProperty AS ?property)
+              BIND(?referenceValue AS ?value)
+        }}
     """
     )
     sparql.setReturnFormat(JSON)

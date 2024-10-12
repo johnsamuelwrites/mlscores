@@ -10,7 +10,13 @@ from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 from tqdm import tqdm  # Import tqdm for the progress bar
 
 from .display import print_language_percentages
-from .query import get_value_labels, get_properties_and_values, get_property_labels
+from .query import (
+    get_value_labels,
+    get_properties_and_values,
+    get_property_labels,
+    get_qualifier_properties_and_values,
+    get_reference_properties_and_values,
+)
 from .scores import (
     calculate_language_percentage,
     calculate_language_percentages,
@@ -38,10 +44,26 @@ def calculate_multilinguality_scores(identifiers, language_codes=None):
 
         # Step 1: Get properties and values
         properties_values_results = get_properties_and_values(item_id)
+        qualifier_properties_values_results = get_qualifier_properties_and_values(
+            item_id
+        )
+        reference_properties_values_results = get_reference_properties_and_values(
+            item_id
+        )
 
         if properties_values_results:
+            if qualifier_properties_values_results:
+                properties_values_results["results"]["bindings"] = (
+                    properties_values_results["results"]["bindings"]
+                    + qualifier_properties_values_results["results"]["bindings"]
+                )
+            if reference_properties_values_results:
+                properties_values_results["results"]["bindings"] = (
+                    properties_values_results["results"]["bindings"]
+                    + reference_properties_values_results["results"]["bindings"]
+                )
             property_value_pairs = [
-                (result["p"]["value"], result["v"]["value"])
+                (result["property"]["value"], result["value"]["value"])
                 for result in properties_values_results["results"]["bindings"]
             ]
 
