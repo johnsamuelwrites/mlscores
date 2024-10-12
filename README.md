@@ -81,6 +81,10 @@ The package generates three types of output:
 
 Contributions are welcome! If you'd like to report an issue or submit a pull request, please visit our [GitHub repository](https://github.com/johnsamuelwrites/mlscores).
 
+### Testing
+
+For information on testing the `mlscores` package, including running the test suite, please see [TESTING.md](TESTING.md).
+
 ## Author
 * John Samuel
 
