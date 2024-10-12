@@ -6,6 +6,21 @@ Multilinguality score of Wikidata (or Wikibase) items
 
 This package generates multilinguality scores for Wikidata (Wikibase) items, specifically for property and property value labels. The scores represent the percentage of labels available in a given language.
 
+## Installation
+
+For installation, please follow these steps:
+
+1. Make sure you have Python 3.x and pip installed on your system.
+2. Clone the repository or download the source code.
+3. Navigate to the directory containing the source code.
+4. Install the required dependencies by running the following command:
+
+```bash
+pip install -r requirements.txt
+```
+
+This will install all the necessary dependencies listed in the `requirements.txt` file.
+
 ## Usage
 
 To generate multilinguality scores, use the following command:
