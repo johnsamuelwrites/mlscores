@@ -1,1 +1,2 @@
 SPARQLWrapper>=2.0.0
+rich>=4.1

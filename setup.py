@@ -14,5 +14,5 @@ setup(
     author_email="johnsamuelwrites@gmail.com",
     url="https://github.com/johnsamuelwrites/mlscores",
     packages=find_packages(),
-    install_requires=["sparqlwrapper"],  # External dependencies
+    install_requires=["sparqlwrapper", "rich"],  # External dependencies
 )
