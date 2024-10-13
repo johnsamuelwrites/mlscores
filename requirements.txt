@@ -1,2 +1,4 @@
 SPARQLWrapper>=2.0.0
 rich>=4.1
+tqdm>=4.65.0
+urllib3>=1.26.15
