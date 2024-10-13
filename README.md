@@ -6,6 +6,14 @@ Multilinguality score of Wikidata (or Wikibase) items
 
 This package generates multilinguality scores for Wikidata (Wikibase) items, specifically for property and property value labels. The scores represent the percentage of labels available in a given language.
 
+## Context
+
+### Multilinguality Calculator for Wikidata Items
+
+`mlscores` analyzes the multilinguality of Wikidata items and properties, providing a measure of how much content is available in different languages. By evaluating the completeness of descriptions, labels, and statements (**properties, property values, qualifier properties, qualifier values, reference properties, reference property values**) in multiple languages (e.g., English, French, Spanish,... any supported language), it gives insights into the global accessibility of Wikidata entries. 
+
+Designed to support researchers, data scientists, and Wikidata contributors, this tool helps identify language gaps and prioritize translations to enhance the multilingual coverage of Wikidata's knowledge base. Whether you're working on expanding local language content or analyzing cross-language data availability, `mlscores` provides the metrics to guide your efforts. 
+
 ## Installation
 
 For installation, please follow these steps:
