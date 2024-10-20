@@ -62,6 +62,26 @@ label and property value
 └──────────┴────────────┘
 ```
 
+and with the -m (--missing) option, it shows the properties and property values missing translations.
+
+```bash
+python3 -m mlscores Q5 -l en fr es pt -m
+```
+
+Output (on October 20, 2024):
+```bash
+                                                 Properties missing translation                                                   
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Languages ┃ Items                                                                                                               ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ fr        │ P11955, P12596                                                                                                      │
+│ es        │ P5806, P9495, P11955, P10376, P7314, P12596, P8785                                                                  │
+│ pt        │ P4527, P8419, P5247, P12596, P8785, P4212, P7807, P8814, P7329, P3222, P8168, P1256, P7497, P6839, P8895, P7775,    │
+│           │ P6385, P6573, P9084, P7703, P5337, P5806, P8885, P5198, P4613, P7007, P6900, P2892, P11955, P9495, P12800, P3911,   │
+│           │ P6058, P7314, P10757                                                                                                │
+└───────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
 For more usage examples, see [USAGE.md](USAGE.md).
 
 ## Output
@@ -71,12 +91,14 @@ The package generates three types of output:
 * **Language Percentages for property labels**: A table showing the percentage of property labels available in each specified language.
 * **Language Percentages for property value labels**: A table showing the percentage of property value labels available in each specified language.
 * **Combined Language Percentages for property label and property value labels**: A table showing the combined percentage of property labels and property value labels available in each specified language.
+* **Missing translations** (optional) : A table showing list of properties and property values missing translation. 
 
 ## Features
 
 * Supports multiple language codes
 * Generates multilinguality scores for property and property value labels
 * Provides combined scores for both label types
+* Provides the list of properties and property labels missing translations
 
 ## Requirements
 

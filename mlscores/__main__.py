@@ -9,7 +9,7 @@ import time
 from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
 from tqdm import tqdm  # Import tqdm for the progress bar
 
-from .display import print_language_percentages
+from .display import print_language_percentages, print_item_language_table
 from .query import (
     get_value_labels,
     get_properties_and_values,
@@ -21,10 +21,12 @@ from .scores import (
     calculate_language_percentage,
     calculate_language_percentages,
     calculate_language_percentage_for_languages,
+    get_properties_without_translations,
+    get_properties_without_translations_in_languages,
 )
 
 
-def calculate_multilinguality_scores(identifiers, language_codes=None):
+def calculate_multilinguality_scores(identifiers, language_codes=None, missing=False):
     """
     Calculate multilinguality scores based on identifiers and language codes.
 
@@ -87,6 +89,21 @@ def calculate_multilinguality_scores(identifiers, language_codes=None):
             print_language_percentages(
                 percentages, "Language Percentages for property labels"
             )
+            if missing:
+                missing_translations = {}
+                if language_codes is None:
+                    missing_translations = get_properties_without_translations(
+                        property_labels_results
+                    )
+                else:
+                    missing_translations = (
+                        get_properties_without_translations_in_languages(
+                            property_labels_results, language_codes
+                        )
+                    )
+                print_item_language_table(
+                    missing_translations, "Properties missing translation"
+                )
 
             # Add a delay to avoid hitting the rate limit
             time.sleep(1)  # Sleep for 1 second
@@ -102,6 +119,21 @@ def calculate_multilinguality_scores(identifiers, language_codes=None):
             print_language_percentages(
                 percentages, "Language Percentages for property value labels"
             )
+            if missing:
+                missing_translations = {}
+                if language_codes is None:
+                    missing_translations = get_properties_without_translations(
+                        value_labels_results
+                    )
+                else:
+                    missing_translations = (
+                        get_properties_without_translations_in_languages(
+                            value_labels_results, language_codes
+                        )
+                    )
+                print_item_language_table(
+                    missing_translations, "Property values missing translation"
+                )
 
             # Step 4: Get combined results
             combined_results = []
@@ -136,7 +168,13 @@ if __name__ == "__main__":
         nargs="+",
         help="One or more language codes (en, fr, ...)",
     )
+    parser.add_argument(
+        "-m",
+        "--missing",
+        action="store_true",
+        help="Show properites missing translation",
+    )
 
     args = parser.parse_args()
 
-    calculate_multilinguality_scores(args.identifiers, args.language)
+    calculate_multilinguality_scores(args.identifiers, args.language, args.missing)

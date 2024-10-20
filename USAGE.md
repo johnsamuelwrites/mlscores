@@ -24,6 +24,18 @@ python3 -m mlscores Q5 Q15 -l en
 python3 -m mlscores Q5 Q10 Q15 -l en fr es
 ```
 
+### Missing translations
+* Generate a list of properties and property values missing translations in multiple languages (English, French, and Spanish) for Wikidata item Q5 :
+ 
+```bash
+python3 -m mlscores Q5 -l en fr es -m
+```
+
+* Generate a list of properties and property values missing translations in multiple languages (English, French, and Spanish) for multiple Wikidata items (Q5, Q10, and Q15) :
+ 
+```bash
+python3 -m mlscores Q5 Q10 Q15 -l en fr es -m
+```
 
 ### Special Cases
 
