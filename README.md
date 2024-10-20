@@ -39,6 +39,7 @@ python3 -m mlscores <identifier> [-l <language_code>...]
 
 * `<identifier>`: One or more Wikidata (Wikibase) item identifiers (e.g., Q5)
 * `<language_code>`: One or more language codes (e.g., en, fr, es, pt, ml)
+* `<missing>` (optional): show properties missing translation.  
 
 Example:
 ```bash
