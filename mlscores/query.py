@@ -13,7 +13,7 @@ from tqdm import tqdm  # Import tqdm for the progress bar
 from .scores import calculate_language_percentage
 
 # Wikidata SPARQL endpoint
-user_agent = "WDQS-example Python/%s.%s" % (sys.version_info[0], sys.version_info[1])
+user_agent = "WDQS-mlscores Python/%s.%s" % (sys.version_info[0], sys.version_info[1])
 sparql = SPARQLWrapper("https://query.wikidata.org/sparql", agent=user_agent)
 
 
