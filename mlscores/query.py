@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+import sys
 import time
 import urllib
 import re
@@ -12,7 +13,8 @@ from tqdm import tqdm  # Import tqdm for the progress bar
 from .scores import calculate_language_percentage
 
 # Wikidata SPARQL endpoint
-sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
+user_agent = "WDQS-example Python/%s.%s" % (sys.version_info[0], sys.version_info[1])
+sparql = SPARQLWrapper("https://query.wikidata.org/sparql", agent=user_agent)
 
 
 def get_properties_and_values(item_id):
