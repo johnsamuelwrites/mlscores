@@ -134,6 +134,48 @@
                     <small>Leave empty to analyze all available languages</small>
                 </div>
 
+                <div class="form-group">
+                    <label for="endpoint">
+                        <span class="label-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                                <line x1="6" y1="6" x2="6.01" y2="6"/>
+                                <line x1="6" y1="18" x2="6.01" y2="18"/>
+                            </svg>
+                        </span>
+                        Endpoint
+                        <span class="optional-badge">optional</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <select id="endpoint" class="endpoint-select">
+                            <option value="wikidata" selected>Wikidata (default)</option>
+                            <option value="commons">Wikimedia Commons</option>
+                            <option value="custom">Custom endpoint...</option>
+                        </select>
+                    </div>
+                    <small>Select a Wikibase instance or specify a custom endpoint</small>
+                </div>
+
+                <div id="custom-endpoint-group" class="form-group hidden">
+                    <label for="custom-endpoint-url">
+                        <span class="label-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                        </span>
+                        Custom SPARQL Endpoint URL
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="url" id="custom-endpoint-url"
+                               placeholder="https://query.example.org/sparql"
+                               autocomplete="off">
+                        <span class="input-focus-border"></span>
+                    </div>
+                    <small>Enter the full SPARQL endpoint URL</small>
+                </div>
+
                 <div class="form-group checkbox-group">
                     <label class="toggle-switch">
                         <input type="checkbox" id="include-missing">

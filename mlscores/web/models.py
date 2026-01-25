@@ -25,6 +25,12 @@ class MultilingualityRequest(BaseModel):
     include_missing: bool = Field(
         False, description="Include list of properties missing translations"
     )
+    endpoint: Optional[str] = Field(
+        None, description="Named endpoint preset (e.g., 'wikidata', 'commons')"
+    )
+    endpoint_url: Optional[str] = Field(
+        None, description="Custom SPARQL endpoint URL"
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -32,6 +38,7 @@ class MultilingualityRequest(BaseModel):
                 "identifiers": ["Q42", "Q5"],
                 "languages": ["en", "fr", "es"],
                 "include_missing": True,
+                "endpoint": "wikidata",
             }
         }
     }

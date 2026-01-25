@@ -17,6 +17,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let lastResultsData = null;
 
+    // Endpoint configurations for different Wikibase instances
+    const ENDPOINT_CONFIGS = {
+        wikidata: {
+            name: 'Wikidata',
+            entityBaseUrl: 'https://www.wikidata.org/wiki/',
+            propertyPrefix: 'http://www.wikidata.org/prop/direct/',
+            entityPrefix: 'http://www.wikidata.org/entity/',
+            sparqlEndpoint: 'https://query.wikidata.org/sparql'
+        },
+        commons: {
+            name: 'Wikimedia Commons',
+            entityBaseUrl: 'https://commons.wikimedia.org/wiki/',
+            propertyPrefix: 'http://www.wikidata.org/prop/direct/',
+            entityPrefix: 'http://commons.wikimedia.org/entity/',
+            sparqlEndpoint: 'https://wcqs-beta.wmflabs.org/sparql'
+        },
+        custom: {
+            name: 'Custom',
+            entityBaseUrl: null,  // Will be set based on user input
+            propertyPrefix: 'http://www.wikidata.org/prop/direct/',
+            entityPrefix: 'http://www.wikidata.org/entity/',
+            sparqlEndpoint: null
+        }
+    };
+
+    // Current active endpoint configuration
+    let currentEndpoint = ENDPOINT_CONFIGS.wikidata;
+
     // Theme Management
     function getPreferredTheme() {
         const savedTheme = localStorage.getItem('mlscores-theme');
@@ -50,6 +78,56 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Endpoint selection handling
+    const endpointSelect = document.getElementById('endpoint');
+    const customEndpointGroup = document.getElementById('custom-endpoint-group');
+    const customEndpointUrl = document.getElementById('custom-endpoint-url');
+
+    endpointSelect?.addEventListener('change', function() {
+        const selectedEndpoint = this.value;
+
+        if (selectedEndpoint === 'custom') {
+            customEndpointGroup?.classList.remove('hidden');
+        } else {
+            customEndpointGroup?.classList.add('hidden');
+            currentEndpoint = ENDPOINT_CONFIGS[selectedEndpoint] || ENDPOINT_CONFIGS.wikidata;
+        }
+    });
+
+    customEndpointUrl?.addEventListener('change', function() {
+        if (this.value) {
+            // For custom endpoints, try to derive entity URL from SPARQL endpoint
+            const sparqlUrl = this.value;
+            currentEndpoint = {
+                ...ENDPOINT_CONFIGS.custom,
+                sparqlEndpoint: sparqlUrl,
+                entityBaseUrl: deriveEntityUrlFromSparql(sparqlUrl)
+            };
+        }
+    });
+
+    function deriveEntityUrlFromSparql(sparqlUrl) {
+        // Try to derive a reasonable entity URL from SPARQL endpoint
+        // Common patterns:
+        // https://query.wikidata.org/sparql -> https://www.wikidata.org/wiki/
+        // https://example.org/sparql -> https://example.org/entity/
+
+        try {
+            const url = new URL(sparqlUrl);
+            // If it looks like Wikidata, use Wikidata pattern
+            if (url.hostname.includes('wikidata')) {
+                return 'https://www.wikidata.org/wiki/';
+            }
+            if (url.hostname.includes('commons.wikimedia')) {
+                return 'https://commons.wikimedia.org/wiki/';
+            }
+            // For other endpoints, construct a basic entity URL
+            return `${url.protocol}//${url.hostname}/entity/`;
+        } catch {
+            return null;
+        }
+    }
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         await calculateScores();
@@ -70,6 +148,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const identifiersInput = document.getElementById('identifiers').value;
         const languagesInput = document.getElementById('languages').value;
         const includeMissing = document.getElementById('include-missing').checked;
+        const endpointValue = document.getElementById('endpoint')?.value || 'wikidata';
+        const customEndpointUrlValue = document.getElementById('custom-endpoint-url')?.value;
+
+        // Update current endpoint based on selection
+        if (endpointValue === 'custom' && customEndpointUrlValue) {
+            currentEndpoint = {
+                ...ENDPOINT_CONFIGS.custom,
+                sparqlEndpoint: customEndpointUrlValue,
+                entityBaseUrl: deriveEntityUrlFromSparql(customEndpointUrlValue)
+            };
+        } else {
+            currentEndpoint = ENDPOINT_CONFIGS[endpointValue] || ENDPOINT_CONFIGS.wikidata;
+        }
 
         // Parse inputs
         const identifiers = identifiersInput
@@ -82,12 +173,26 @@ document.addEventListener('DOMContentLoaded', function() {
             : null;
 
         if (identifiers.length === 0) {
-            showError('Please enter at least one Wikidata item ID');
+            showError('Please enter at least one item ID');
             return;
         }
 
         // Show loading, hide results/error
         showLoading();
+
+        // Build request body
+        const requestBody = {
+            identifiers: identifiers,
+            languages: languages,
+            include_missing: includeMissing
+        };
+
+        // Add endpoint URL if custom
+        if (endpointValue === 'custom' && customEndpointUrlValue) {
+            requestBody.endpoint_url = customEndpointUrlValue;
+        } else if (endpointValue !== 'wikidata') {
+            requestBody.endpoint = endpointValue;
+        }
 
         try {
             const response = await fetch('/api/scores', {
@@ -95,11 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    identifiers: identifiers,
-                    languages: languages,
-                    include_missing: includeMissing
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -147,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             itemDiv.className = 'item-result';
             itemDiv.style.animationDelay = `${index * 0.1}s`;
 
-            let html = `<h3>Item: ${escapeHtml(item.item_id)}</h3>`;
+            let html = `<h3>Item: ${createItemLink(item.item_id)}</h3>`;
 
             // Property Labels Table
             html += createScoreTable(
@@ -256,11 +357,12 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
 
         entries.forEach(([lang, items]) => {
-            // Shorten URIs for display
-            const shortItems = items.map(uri => {
-                return uri
-                    .replace('http://www.wikidata.org/prop/direct/', '')
-                    .replace('http://www.wikidata.org/entity/', '');
+            // Shorten URIs for display and create clickable links
+            const itemLinks = items.map(uri => {
+                const shortId = uri
+                    .replace(currentEndpoint.propertyPrefix, '')
+                    .replace(currentEndpoint.entityPrefix, '');
+                return createMissingItemLink(shortId);
             });
 
             html += `
@@ -270,7 +372,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </td>
                     <td>
                         <div class="missing-items">
-                            ${shortItems.map(item => `<span class="missing-item">${escapeHtml(item)}</span>`).join('')}
+                            ${itemLinks.join('')}
                         </div>
                     </td>
                 </tr>
@@ -299,6 +401,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function createWikidataUrl(identifier) {
+        // Handle both Q-items and P-properties
+        // identifier can be like "Q42", "P31", or full URIs
+        let id = identifier;
+
+        // If it's a full URI, extract just the ID
+        if (identifier.startsWith('http')) {
+            id = identifier
+                .replace(currentEndpoint.propertyPrefix, '')
+                .replace(currentEndpoint.entityPrefix, '');
+        }
+
+        // If no entity base URL is configured, return null (no link)
+        if (!currentEndpoint.entityBaseUrl) {
+            return null;
+        }
+
+        // Properties go to Property: namespace, items go directly
+        // This works for Wikidata-style instances
+        if (id.startsWith('P')) {
+            return `${currentEndpoint.entityBaseUrl}Property:${id}`;
+        }
+        // For Commons, items start with M
+        if (id.startsWith('M') && currentEndpoint.name === 'Wikimedia Commons') {
+            return `${currentEndpoint.entityBaseUrl}File:${id}`;
+        }
+        return `${currentEndpoint.entityBaseUrl}${id}`;
+    }
+
+    function createItemLink(identifier) {
+        const url = createWikidataUrl(identifier);
+        if (url) {
+            return `<a href="${url}" target="_blank" rel="noopener" class="item-link">${escapeHtml(identifier)}</a>`;
+        }
+        return escapeHtml(identifier);
+    }
+
+    function createMissingItemLink(identifier) {
+        const url = createWikidataUrl(identifier);
+        if (url) {
+            return `<a href="${url}" target="_blank" rel="noopener" class="missing-item">${escapeHtml(identifier)}</a>`;
+        }
+        return `<span class="missing-item">${escapeHtml(identifier)}</span>`;
     }
 
     // Add visual feedback for input focus
