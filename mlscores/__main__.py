@@ -5,9 +5,9 @@
 #
 
 import argparse
+import sys
 import time
-from SPARQLWrapper import SPARQLWrapper, JSON, SPARQLExceptions
-from tqdm import tqdm  # Import tqdm for the progress bar
+from typing import List, Optional
 
 from .display import print_language_percentages, print_item_language_table
 from .query import (
@@ -18,32 +18,41 @@ from .query import (
     get_reference_properties_and_values,
 )
 from .scores import (
-    calculate_language_percentage,
     calculate_language_percentages,
     calculate_language_percentage_for_languages,
     get_properties_without_translations,
     get_properties_without_translations_in_languages,
 )
+from .formatters import (
+    MultilingualityResult,
+    get_formatter,
+    convert_sets_to_lists,
+)
 
 
-def calculate_multilinguality_scores(identifiers, language_codes=None, missing=False):
+def calculate_multilinguality_scores(
+    identifiers: List[str],
+    language_codes: Optional[List[str]] = None,
+    missing: bool = False,
+) -> List[MultilingualityResult]:
     """
     Calculate multilinguality scores based on identifiers and language codes.
 
     Args:
-        identifiers (list): A list of identifiers.
-        language_codes (list, optional): A list of language codes. Defaults to None.
+        identifiers: A list of Wikidata/Wikibase item identifiers.
+        language_codes: A list of language codes to filter results. Defaults to None (all languages).
+        missing: Whether to include missing translations in results.
 
     Returns:
-        None
+        A list of MultilingualityResult objects containing the calculated scores.
 
     Notes:
         This function calculates the multilinguality scores of the Wikidata (or Wikibase) items
-        and prints the values for the given language codes (by default: all available languages)
+        and returns the values for the given language codes (by default: all available languages)
     """
-    for item_id in identifiers:
-        print("For Wikidata (Wikibase) item:", item_id)
+    results: List[MultilingualityResult] = []
 
+    for item_id in identifiers:
         # Step 1: Get properties and values
         properties_values_results = get_properties_and_values(item_id)
         qualifier_properties_values_results = get_qualifier_properties_and_values(
@@ -78,103 +87,253 @@ def calculate_multilinguality_scores(identifiers, language_codes=None, missing=F
             )  # Unique value URIs (IRIs)
 
             # Step 2: Get property labels
-            percentages = None
             property_labels_results = get_property_labels(property_uris)
             if language_codes is None:
-                percentages = calculate_language_percentages(property_labels_results)
+                property_percentages = calculate_language_percentages(
+                    property_labels_results
+                )
             else:
-                percentages = calculate_language_percentage_for_languages(
+                property_percentages = calculate_language_percentage_for_languages(
                     property_labels_results, language_codes
                 )
-            print_language_percentages(
-                percentages, "Language Percentages for property labels"
-            )
+
+            # Get missing property translations if requested
+            missing_property_trans = None
             if missing:
-                missing_translations = {}
                 if language_codes is None:
-                    missing_translations = get_properties_without_translations(
-                        property_labels_results
+                    missing_property_trans = convert_sets_to_lists(
+                        get_properties_without_translations(property_labels_results)
                     )
                 else:
-                    missing_translations = (
+                    missing_property_trans = convert_sets_to_lists(
                         get_properties_without_translations_in_languages(
                             property_labels_results, language_codes
                         )
                     )
-                print_item_language_table(
-                    missing_translations, "Properties missing translation"
-                )
 
             # Add a delay to avoid hitting the rate limit
-            time.sleep(1)  # Sleep for 1 second
+            time.sleep(1)
 
             # Step 3: Get value labels
             value_labels_results = get_value_labels(value_uris)
             if language_codes is None:
-                percentages = calculate_language_percentages(value_labels_results)
+                value_percentages = calculate_language_percentages(value_labels_results)
             else:
-                percentages = calculate_language_percentage_for_languages(
+                value_percentages = calculate_language_percentage_for_languages(
                     value_labels_results, language_codes
                 )
-            print_language_percentages(
-                percentages, "Language Percentages for property value labels"
-            )
+
+            # Get missing value translations if requested
+            missing_value_trans = None
             if missing:
-                missing_translations = {}
                 if language_codes is None:
-                    missing_translations = get_properties_without_translations(
-                        value_labels_results
+                    missing_value_trans = convert_sets_to_lists(
+                        get_properties_without_translations(value_labels_results)
                     )
                 else:
-                    missing_translations = (
+                    missing_value_trans = convert_sets_to_lists(
                         get_properties_without_translations_in_languages(
                             value_labels_results, language_codes
                         )
                     )
-                print_item_language_table(
-                    missing_translations, "Property values missing translation"
-                )
 
             # Step 4: Get combined results
-            combined_results = []
-            combined_results = combined_results + property_labels_results
-            combined_results = combined_results + value_labels_results
+            combined_results_list = property_labels_results + value_labels_results
             if language_codes is None:
-                percentages = calculate_language_percentages(combined_results)
-            else:
-                percentages = calculate_language_percentage_for_languages(
-                    combined_results, language_codes
+                combined_percentages = calculate_language_percentages(
+                    combined_results_list
                 )
-            print_language_percentages(
-                percentages,
-                "Combined Language Percentages for property label and property value labels",
+            else:
+                combined_percentages = calculate_language_percentage_for_languages(
+                    combined_results_list, language_codes
+                )
+
+            # Create result object
+            result = MultilingualityResult(
+                item_id=item_id,
+                property_label_percentages=property_percentages,
+                value_label_percentages=value_percentages,
+                combined_percentages=combined_percentages,
+                missing_property_translations=missing_property_trans,
+                missing_value_translations=missing_value_trans,
             )
+            results.append(result)
 
         else:
-            print("No properties and values found for the item.")
+            # No properties found - create empty result
+            empty_percentages = (
+                {lang: 0.0 for lang in language_codes} if language_codes else {}
+            )
+            result = MultilingualityResult(
+                item_id=item_id,
+                property_label_percentages=empty_percentages,
+                value_label_percentages=empty_percentages,
+                combined_percentages=empty_percentages,
+            )
+            results.append(result)
+            print(f"No properties and values found for item {item_id}.")
+
+    return results
 
 
-if __name__ == "__main__":
+def output_results(
+    results: List[MultilingualityResult],
+    output_format: str = "table",
+    output_file: Optional[str] = None,
+    show_missing: bool = False,
+) -> None:
+    """
+    Output results in the specified format.
+
+    Args:
+        results: List of MultilingualityResult objects.
+        output_format: Output format ('table', 'json', or 'csv').
+        output_file: Optional file path to write output to.
+        show_missing: Whether to show missing translations (for table format).
+    """
+    formatter = get_formatter(output_format)
+
+    if output_format == "table":
+        # For table format, use direct console output
+        for result in results:
+            print(f"\nFor Wikidata (Wikibase) item: {result.item_id}")
+            print_language_percentages(
+                result.property_label_percentages,
+                "Language Percentages for property labels",
+            )
+            if show_missing and result.missing_property_translations:
+                # Convert lists back to sets for display
+                missing_as_sets = {
+                    k: set(v) for k, v in result.missing_property_translations.items()
+                }
+                print_item_language_table(
+                    missing_as_sets, "Properties missing translation"
+                )
+
+            print_language_percentages(
+                result.value_label_percentages,
+                "Language Percentages for property value labels",
+            )
+            if show_missing and result.missing_value_translations:
+                missing_as_sets = {
+                    k: set(v) for k, v in result.missing_value_translations.items()
+                }
+                print_item_language_table(
+                    missing_as_sets, "Property values missing translation"
+                )
+
+            print_language_percentages(
+                result.combined_percentages,
+                "Combined Language Percentages for property label and property value labels",
+            )
+    else:
+        # For JSON/CSV formats, use formatter
+        output = formatter.format(results)
+
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(output)
+            print(f"Results written to {output_file}")
+        else:
+            print(output)
+
+
+def main() -> None:
+    """Main entry point for the CLI."""
     parser = argparse.ArgumentParser(
-        description="Process identifiers and language codes."
+        description="Calculate multilinguality scores for Wikidata/Wikibase items.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python -m mlscores Q42 -l en fr es
+  python -m mlscores Q5 Q10 -l en fr -m
+  python -m mlscores Q42 -f json -o results.json
+  python -m mlscores Q42 -f csv -o results.csv
+        """,
     )
     parser.add_argument(
-        "identifiers", type=str, nargs="+", help="One or more identifiers"
+        "identifiers",
+        type=str,
+        nargs="*",
+        default=[],
+        help="One or more Wikidata/Wikibase item identifiers (e.g., Q42, P31)",
     )
     parser.add_argument(
         "-l",
         "--language",
         type=str,
         nargs="+",
-        help="One or more language codes (en, fr, ...)",
+        help="One or more language codes to filter results (e.g., en fr es)",
     )
     parser.add_argument(
         "-m",
         "--missing",
         action="store_true",
-        help="Show properites missing translation",
+        help="Show properties missing translation",
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        type=str,
+        choices=["table", "json", "csv"],
+        default="table",
+        help="Output format (default: table)",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=str,
+        help="Output file path (default: stdout)",
+    )
+
+    # Web server options
+    parser.add_argument(
+        "--web",
+        action="store_true",
+        help="Start the web server instead of CLI mode",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default="127.0.0.1",
+        help="Web server host (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Web server port (default: 8000)",
     )
 
     args = parser.parse_args()
 
-    calculate_multilinguality_scores(args.identifiers, args.language, args.missing)
+    # Handle web server mode
+    if args.web:
+        try:
+            from .web import run_server
+
+            print(f"Starting web server at http://{args.host}:{args.port}")
+            print(f"API documentation at http://{args.host}:{args.port}/api/docs")
+            run_server(host=args.host, port=args.port)
+        except ImportError:
+            print(
+                "Web dependencies not installed. Install with: pip install mlscores[web]"
+            )
+            sys.exit(1)
+        return
+
+    # Require identifiers for CLI mode
+    if not args.identifiers:
+        parser.error("the following arguments are required: identifiers")
+
+    # Calculate scores
+    results = calculate_multilinguality_scores(
+        args.identifiers, args.language, args.missing
+    )
+
+    # Output results
+    output_results(results, args.format, args.output, args.missing)
+
+
+if __name__ == "__main__":
+    main()

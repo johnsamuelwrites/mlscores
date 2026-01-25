@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-"""mlscores - Multilinguality score calculator for Wikidata/Wikibase items."""
+"""Web interface module for mlscores."""
 
-__version__ = "0.1.0"
+from .app import app, run_server
+
+__all__ = ["app", "run_server"]

@@ -16,7 +16,7 @@ from mlscores.scores import (
 )
 
 
-def test_empty_properties():
+def test_calc_lang_pct_empty_properties():
     properties = []
     language = "en"
     assert calculate_language_percentage(properties, language) == 0
@@ -64,30 +64,30 @@ def test_properties_with_multiple_languages():
     assert round(calculate_language_percentage(properties, language), 2) == 33.33
 
 
-def test_properties_with_none_language():
+def test_calc_lang_pct_with_none_language():
     properties = [("prop1", "value1", None), ("prop2", "value2", "fr")]
     language = "en"
     assert calculate_language_percentage(properties, language) == 0
 
 
-def test_empty_properties():
+def test_calc_lang_pcts_empty_properties():
     properties = []
     assert calculate_language_percentages(properties) == {}
 
 
-def test_single_property():
+def test_calc_lang_pcts_single_property():
     properties = [("prop1", "value1", "en")]
     expected_result = {"en": 100.0}
     assert calculate_language_percentages(properties) == expected_result
 
 
-def test_multiple_properties_single_language():
+def test_calc_lang_pcts_multi_props_single_lang():
     properties = [("prop1", "value1", "en"), ("prop2", "value2", "en")]
     expected_result = {"en": 100.0}
     assert calculate_language_percentages(properties) == expected_result
 
 
-def test_multiple_properties_multiple_languages():
+def test_calc_lang_pcts_multi_props_multi_langs():
     properties = [
         ("prop1", "value1", "en"),
         ("prop2", "value2", "fr"),
@@ -99,7 +99,7 @@ def test_multiple_properties_multiple_languages():
     )
 
 
-def test_properties_with_duplicates():
+def test_calc_lang_pcts_with_duplicates():
     properties = [
         ("prop1", "value1", "en"),
         ("prop1", "value1", "en"),
@@ -124,13 +124,13 @@ def test_properties_with_multiple_languages_and_duplicates():
     )
 
 
-def test_properties_with_empty_language():
+def test_calc_lang_pcts_with_empty_language():
     properties = [("prop1", "value1", "")]
     expected_result = {"": 100.0}
     assert calculate_language_percentages(properties) == expected_result
 
 
-def test_empty_properties():
+def test_calc_lang_pct_for_langs_empty_properties():
     properties = []
     languages = ["en", "fr"]
     expected_result = {"en": 0, "fr": 0}
@@ -140,7 +140,7 @@ def test_empty_properties():
     )
 
 
-def test_single_property():
+def test_calc_lang_pct_for_langs_single_property():
     properties = [("prop1", "value1", "en")]
     languages = ["en", "fr"]
     expected_result = {"en": 100.0, "fr": 0}
@@ -150,7 +150,7 @@ def test_single_property():
     )
 
 
-def test_multiple_properties_single_language():
+def test_calc_lang_pct_for_langs_multi_props_single_lang():
     properties = [("prop1", "value1", "en"), ("prop2", "value2", "en")]
     languages = ["en", "fr"]
     expected_result = {"en": 100.0, "fr": 0}
@@ -160,7 +160,7 @@ def test_multiple_properties_single_language():
     )
 
 
-def test_multiple_properties_multiple_languages():
+def test_calc_lang_pct_for_langs_multi_props_multi_langs():
     properties = [
         ("prop1", "value1", "en"),
         ("prop2", "value2", "fr"),
@@ -173,7 +173,7 @@ def test_multiple_properties_multiple_languages():
     ) == pytest.approx(expected_result, rel=1e-2)
 
 
-def test_languages_not_in_properties():
+def test_calc_lang_pct_for_langs_not_in_properties():
     properties = [("prop1", "value1", "en")]
     languages = ["fr", "es"]
     expected_result = {"fr": 0, "es": 0}
@@ -183,7 +183,7 @@ def test_languages_not_in_properties():
     )
 
 
-def test_properties_with_duplicates():
+def test_calc_lang_pct_for_langs_with_duplicates():
     properties = [
         ("prop1", "value1", "en"),
         ("prop1", "value1", "en"),
@@ -196,7 +196,7 @@ def test_properties_with_duplicates():
     ) == pytest.approx(expected_result, rel=1e-2)
 
 
-def test_empty_languages():
+def test_calc_lang_pct_for_langs_empty_languages():
     properties = [("prop1", "value1", "en")]
     languages = []
     expected_result = {}
@@ -204,9 +204,6 @@ def test_empty_languages():
         calculate_language_percentage_for_languages(properties, languages)
         == expected_result
     )
-
-
-import pytest
 
 
 def test_get_properties_without_translations():
@@ -291,9 +288,6 @@ def test_get_properties_without_translations_in_languages_single_language():
         get_properties_without_translations_in_languages(properties, languages)
         == expected_result
     )
-
-
-import pytest
 
 
 def test_get_missing_translations_empty_properties():

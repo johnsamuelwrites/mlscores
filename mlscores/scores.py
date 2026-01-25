@@ -4,8 +4,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+from typing import Dict, List, Set, Tuple, Optional
 
-def calculate_language_percentage(properties, language):
+# Type alias for property tuple: (property_uri, value, language)
+PropertyTuple = Tuple[str, str, str]
+
+
+def calculate_language_percentage(properties: List[PropertyTuple], language: str) -> float:
     """
     Calculate the percentage of properties in the given language.
 
@@ -45,7 +50,9 @@ def calculate_language_percentage(properties, language):
     return language_percentage
 
 
-def calculate_language_percentage_for_languages(properties, languages):
+def calculate_language_percentage_for_languages(
+    properties: List[PropertyTuple], languages: List[str]
+) -> Dict[str, float]:
     """
     Calculate the percentage of properties for each language.
 
@@ -87,7 +94,7 @@ def calculate_language_percentage_for_languages(properties, languages):
     return language_percentages
 
 
-def calculate_language_percentages(properties):
+def calculate_language_percentages(properties: List[PropertyTuple]) -> Dict[str, float]:
     """
     Calculate the percentage of properties for each language.
 
@@ -134,7 +141,9 @@ def calculate_language_percentages(properties):
     return language_percentages
 
 
-def get_missing_translations(properties, languages):
+def get_missing_translations(
+    properties: List[PropertyTuple], languages: List[str]
+) -> Dict[str, Set[str]]:
     """
     Find properties that do not have translations in the given languages.
 
@@ -171,7 +180,9 @@ def get_missing_translations(properties, languages):
     return missing_translations
 
 
-def get_missing_translations_for_all_languages(properties):
+def get_missing_translations_for_all_languages(
+    properties: List[PropertyTuple],
+) -> Dict[str, Set[str]]:
     """
     Find properties that do not have translations in all languages.
 
@@ -208,7 +219,9 @@ def get_missing_translations_for_all_languages(properties):
     return missing_translations
 
 
-def get_properties_without_translations(properties):
+def get_properties_without_translations(
+    properties: List[PropertyTuple],
+) -> Dict[str, Set[str]]:
     """
     Find properties that do not have translations in all languages.
 
@@ -243,7 +256,9 @@ def get_properties_without_translations(properties):
     return missing_translations
 
 
-def get_properties_without_translations_in_languages(properties, languages):
+def get_properties_without_translations_in_languages(
+    properties: List[PropertyTuple], languages: List[str]
+) -> Dict[str, Set[str]]:
     """
     Find properties that do not have translations in specific languages.
 

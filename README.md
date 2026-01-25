@@ -10,9 +10,9 @@ This package generates multilinguality scores for Wikidata (Wikibase) items, spe
 
 ### Multilinguality Calculator for Wikidata Items
 
-`mlscores` analyzes the multilinguality of Wikidata items and properties, providing a measure of how much content is available in different languages. By evaluating the completeness of descriptions, labels, and statements (**properties, property values, qualifier properties, qualifier values, reference properties, reference property values**) in multiple languages (e.g., English, French, Spanish,... any supported language), it gives insights into the global accessibility of Wikidata entries. 
+`mlscores` analyzes the multilinguality of Wikidata items and properties, providing a measure of how much content is available in different languages. By evaluating the completeness of descriptions, labels, and statements (**properties, property values, qualifier properties, qualifier values, reference properties, reference property values**) in multiple languages (e.g., English, French, Spanish,... any supported language), it gives insights into the global accessibility of Wikidata entries.
 
-Designed to support researchers, data scientists, and Wikidata contributors, this tool helps identify language gaps and prioritize translations to enhance the multilingual coverage of Wikidata's knowledge base. Whether you're working on expanding local language content or analyzing cross-language data availability, `mlscores` provides the metrics to guide your efforts. 
+Designed to support researchers, data scientists, and Wikidata contributors, this tool helps identify language gaps and prioritize translations to enhance the multilingual coverage of Wikidata's knowledge base. Whether you're working on expanding local language content or analyzing cross-language data availability, `mlscores` provides the metrics to guide your efforts.
 
 ## Installation
 
@@ -21,37 +21,69 @@ For installation, please follow these steps:
 1. Make sure you have Python 3.x and pip installed on your system.
 2. Clone the repository or download the source code.
 3. Navigate to the directory containing the source code.
-4. Install the required dependencies by running the following command:
+4. Install the package:
 
 ```bash
-pip install -r requirements.txt
+# Basic installation
+pip install .
+
+# With development dependencies (pytest, pytest-cov)
+pip install ".[dev]"
+
+# With web interface dependencies (FastAPI, uvicorn)
+pip install ".[web]"
+
+# With all dependencies
+pip install ".[dev,web]"
 ```
 
-This will install all the necessary dependencies listed in the `requirements.txt` file.
+Alternatively, install dependencies using requirements files:
+
+```bash
+# Core dependencies only
+pip install -r requirements.txt
+
+# With development dependencies
+pip install -r requirements-dev.txt
+
+# With web interface dependencies
+pip install -r requirements-web.txt
+```
 
 ## Usage
 
 To generate multilinguality scores, use the following command:
 
 ```bash
-python3 -m mlscores <identifier> [-l <language_code>...]
+python3 -m mlscores <identifier> [-l <language_code>...] [-f <format>] [-o <output_file>]
 ```
 
-* `<identifier>`: One or more Wikidata (Wikibase) item identifiers (e.g., Q5)
-* `<language_code>`: One or more language codes (e.g., en, fr, es, pt, ml)
-* `<missing>` (optional): show properties missing translation.  
+### Command Line Options
 
-Example:
+| Option | Description |
+|--------|-------------|
+| `<identifier>` | One or more Wikidata (Wikibase) item identifiers (e.g., Q5) |
+| `-l, --languages` | One or more language codes (e.g., en, fr, es, pt, ml) |
+| `-m, --missing` | Show properties missing translation |
+| `-f, --format` | Output format: `table` (default), `json`, or `csv` |
+| `-o, --output` | Output file path (prints to console if not specified) |
+| `--web` | Start the web interface server |
+| `--host` | Web server host (default: 127.0.0.1) |
+| `--port` | Web server port (default: 8000) |
+
+### Examples
+
+Basic usage:
 ```bash
-python3 -m mlscores Q5 -l en fr es pt 
+python3 -m mlscores Q5 -l en fr es pt
 ```
 
 Output (on October 12, 2024):
 ```bash
-    Combined Language    
-Percentages for property 
-label and property value 
-         labels          
+    Combined Language
+Percentages for property
+label and property value
+         labels
 
 ┏━━━━━━━━━━┳━━━━━━━━━━━━┓
 ┃ Language ┃ Percentage ┃
@@ -63,7 +95,7 @@ label and property value
 └──────────┴────────────┘
 ```
 
-and with the -m (--missing) option, it shows the properties and property values missing translations.
+With the `-m` (--missing) option to show properties and property values missing translations:
 
 ```bash
 python3 -m mlscores Q5 -l en fr es pt -m
@@ -71,7 +103,7 @@ python3 -m mlscores Q5 -l en fr es pt -m
 
 Output (on October 20, 2024):
 ```bash
-                                                 Properties missing translation                                                   
+                                                 Properties missing translation
 ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Languages ┃ Items                                                                                                               ┃
 ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -83,7 +115,57 @@ Output (on October 20, 2024):
 └───────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Output Formats
+
+Export results in different formats:
+
+```bash
+# JSON output to console
+python3 -m mlscores Q5 -l en fr -f json
+
+# CSV output to file
+python3 -m mlscores Q5 -l en fr -f csv -o results.csv
+
+# JSON output to file
+python3 -m mlscores Q5 Q10 -l en fr es -f json -o results.json
+```
+
 For more usage examples, see [USAGE.md](USAGE.md).
+
+## Web Interface
+
+`mlscores` includes a web interface powered by FastAPI. To use it, first install the web dependencies:
+
+```bash
+# Using pip extras
+pip install ".[web]"
+
+# Or using requirements file
+pip install -r requirements-web.txt
+```
+
+Then start the web server:
+
+```bash
+python3 -m mlscores --web
+```
+
+The server starts at `http://127.0.0.1:8000` by default. You can customize the host and port:
+
+```bash
+python3 -m mlscores --web --host 0.0.0.0 --port 5000
+```
+
+### Web Interface Features
+
+- **Interactive UI**: Access at `http://127.0.0.1:8000/`
+- **REST API**:
+  - `GET /api/health` - Health check endpoint
+  - `POST /api/scores` - Calculate scores for multiple items
+  - `GET /api/scores/{item_id}` - Calculate scores for a single item
+- **API Documentation**:
+  - Swagger UI: `http://127.0.0.1:8000/api/docs`
+  - ReDoc: `http://127.0.0.1:8000/api/redoc`
 
 ## Output
 
@@ -92,7 +174,7 @@ The package generates three types of output:
 * **Language Percentages for property labels**: A table showing the percentage of property labels available in each specified language.
 * **Language Percentages for property value labels**: A table showing the percentage of property value labels available in each specified language.
 * **Combined Language Percentages for property label and property value labels**: A table showing the combined percentage of property labels and property value labels available in each specified language.
-* **Missing translations** (optional) : A table showing list of properties and property values missing translation. 
+* **Missing translations** (optional): A table showing list of properties and property values missing translation.
 
 ## Features
 
@@ -100,13 +182,22 @@ The package generates three types of output:
 * Generates multilinguality scores for property and property value labels
 * Provides combined scores for both label types
 * Provides the list of properties and property labels missing translations
+* Multiple output formats (table, JSON, CSV)
+* Query caching for improved performance
+* Web interface with REST API
+* Custom Wikibase endpoint support
 
 ## Requirements
 
 * Python 3.x
-* `argparse` library (included in Python 3.x)
-* `rich`
-* `SPARQLWrapper`
+* `SPARQLWrapper` >= 2.0.0
+* `rich` >= 4.1
+* `tqdm` >= 4.65.0
+* `urllib3` >= 1.26.15
+
+Optional dependencies:
+* For web interface: `fastapi`, `uvicorn`, `pydantic`
+* For development: `pytest`, `pytest-cov`
 
 ## Contributing
 

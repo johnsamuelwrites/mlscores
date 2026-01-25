@@ -4,11 +4,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+from typing import Dict, Set
+
 from rich.console import Console
 from rich.table import Table
 
+from .constants import WIKIDATA_PROPERTY_PREFIX, WIKIDATA_ENTITY_PREFIX
 
-def print_language_percentages(percentages, title):
+
+def print_language_percentages(percentages: Dict[str, float], title: str) -> None:
     """
     Print language percentages as a table.
 
@@ -40,7 +44,7 @@ def print_language_percentages(percentages, title):
     console.print(table)
 
 
-def print_item_language_table(data, title):
+def print_item_language_table(data: Dict[str, Set[str]], title: str) -> None:
     """
     Prints a table of language and languages.
 
@@ -68,8 +72,8 @@ def print_item_language_table(data, title):
         # Join the list of languages into a string
         items_str = ", ".join(items)
         # Add a row to the table
-        items_str = items_str.replace("http://www.wikidata.org/prop/direct/", "")
-        items_str = items_str.replace("http://www.wikidata.org/entity/", "")
+        items_str = items_str.replace(WIKIDATA_PROPERTY_PREFIX, "")
+        items_str = items_str.replace(WIKIDATA_ENTITY_PREFIX, "")
         table.add_row(language, items_str)
 
     # Print the table
