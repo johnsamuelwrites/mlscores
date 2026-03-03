@@ -156,6 +156,18 @@ The server starts at `http://127.0.0.1:8000` by default. You can customize the h
 python3 -m mlscores --web --host 0.0.0.0 --port 5000
 ```
 
+### Browser-Only WASM Interface (Pyodide)
+
+In addition to the FastAPI interface, mlscores now includes a browser-only UI powered by Pyodide/WebAssembly:
+
+- URL when running FastAPI locally: `http://127.0.0.1:8000/static/wasm/index.html`
+- Main file: `mlscores/web/static/wasm/index.html`
+- It runs SPARQL queries directly from the browser and does not require FastAPI API routes.
+
+This mode is useful for static hosting (for example GitHub Pages), with the caveat that browser CORS restrictions apply based on the selected SPARQL endpoint.
+
+GitHub Actions workflow: `.github/workflows/deploy-pages.yml` deploys `mlscores/web/static/wasm/` to GitHub Pages.
+
 ### Web Interface Features
 
 - **Interactive UI**: Access at `http://127.0.0.1:8000/`

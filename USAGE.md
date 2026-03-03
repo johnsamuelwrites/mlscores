@@ -172,6 +172,16 @@ python3 -m mlscores --web
 python3 -m mlscores --web --host 0.0.0.0 --port 5000
 ```
 
+#### Browser-Only WASM UI (Pyodide)
+
+A browser-only interface is available in addition to the FastAPI-backed UI:
+
+- Local URL (served by FastAPI static files): `http://127.0.0.1:8000/static/wasm/index.html`
+- Static file path: `mlscores/web/static/wasm/index.html`
+- This mode executes scoring in-browser via Pyodide and directly queries a SPARQL endpoint.
+
+This is suitable for static hosting scenarios such as GitHub Pages, subject to endpoint CORS policies.
+
 #### Accessing the Web Interface
 
 Once the server is running:

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>mlscores WASM (Pyodide)</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
+</head>
+<body>
+  <main class="container">
+    <h1>mlscores WASM</h1>
+    <p class="subtitle">Browser-only multilinguality scoring using Pyodide (no FastAPI required).</p>
+
+    <form id="score-form" class="card">
+      <label for="identifiers">Wikidata item IDs</label>
+      <input id="identifiers" type="text" placeholder="Q42, Q5" required>
+
+      <label for="languages">Languages (optional)</label>
+      <input id="languages" type="text" placeholder="en, fr, es">
+
+      <label for="endpoint">SPARQL endpoint</label>
+      <input id="endpoint" type="url" value="https://query.wikidata.org/sparql" required>
+
+      <label class="inline">
+        <input id="include-missing" type="checkbox">
+        Include missing translations
+      </label>
+
+      <button id="submit-btn" type="submit">Calculate</button>
+    </form>
+
+    <section id="status" class="card">Loading Pyodide...</section>
+    <section id="error" class="card hidden"></section>
+    <section id="results" class="card hidden"></section>
+
+    <p class="footer-link"><a href="../index.html">Open FastAPI UI</a></p>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
