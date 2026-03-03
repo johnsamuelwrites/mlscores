@@ -3,10 +3,6 @@ name: Deploy WASM App to GitHub Pages
 on:
   push:
     branches: ["main", "master"]
-    paths:
-      - "mlscores/web/static/wasm/**"
-      - ".github/workflows/deploy-pages.yml"
-      - "README.md"
   workflow_dispatch:
 
 permissions:
