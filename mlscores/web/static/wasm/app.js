@@ -33,6 +33,10 @@ function parseCsvInput(value) {
     .filter((v) => v.length > 0);
 }
 
+function isValidIdentifier(identifier) {
+  return /^[QPM]\d+$/i.test((identifier || "").trim());
+}
+
 function inferEntitySearchApi(endpointUrl) {
   const value = (endpointUrl || "").toLowerCase();
   if (value.includes("wikidata")) {
@@ -41,7 +45,7 @@ function inferEntitySearchApi(endpointUrl) {
   if (value.includes("commons.wikimedia") || value.includes("wcqs-beta.wmflabs.org")) {
     return "https://commons.wikimedia.org/w/api.php";
   }
-  return null;
+  return "https://www.wikidata.org/w/api.php";
 }
 
 function renderPercentagesTable(title, percentages) {
@@ -160,6 +164,14 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
+  const invalidIdentifiers = identifiers.filter((id) => !isValidIdentifier(id));
+  if (invalidIdentifiers.length) {
+    showError(
+      `Invalid identifier(s): ${invalidIdentifiers.join(", ")}. Use QIDs/PIDs (for example Q1339), or pick a suggestion.`
+    );
+    return;
+  }
+
   submitBtn.disabled = true;
   setStatus("Running SPARQL queries in-browser...");
 
@@ -189,12 +201,8 @@ form.addEventListener("submit", async (event) => {
 const identifierAutocomplete = window.MlscoresEntitySuggest?.attachAutocomplete({
   inputEl: identifiersInput,
   suggestionsEl: suggestionsList,
-  shouldSuggest: () => Boolean(inferEntitySearchApi(endpointInput?.value || "")),
   fetchSuggestions: async (queryText) => {
     const apiUrl = inferEntitySearchApi(endpointInput?.value || "");
-    if (!apiUrl) {
-      return [];
-    }
 
     const params = new URLSearchParams({
       action: "wbsearchentities",

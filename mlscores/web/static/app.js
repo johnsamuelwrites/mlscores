@@ -113,9 +113,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const identifierAutocomplete = window.MlscoresEntitySuggest?.attachAutocomplete({
         inputEl: identifiersInput,
         suggestionsEl: suggestionsList,
-        shouldSuggest: () => (endpointSelect?.value || 'wikidata') !== 'custom',
         fetchSuggestions: async (queryText) => {
-            const endpointValue = endpointSelect?.value || 'wikidata';
+            const rawEndpointValue = endpointSelect?.value || 'wikidata';
+            const endpointValue = rawEndpointValue === 'custom' ? 'wikidata' : rawEndpointValue;
             const params = new URLSearchParams({
                 q: queryText,
                 endpoint: endpointValue,
@@ -150,6 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch {
             return null;
         }
+    }
+
+    function isValidIdentifier(identifier) {
+        return /^[QPM]\d+$/i.test((identifier || '').trim());
     }
 
     form.addEventListener('submit', async function(e) {
@@ -191,6 +195,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .split(',')
             .map(s => s.trim())
             .filter(s => s.length > 0);
+
+        const invalidIdentifiers = identifiers.filter(id => !isValidIdentifier(id));
+        if (invalidIdentifiers.length > 0) {
+            showError(`Invalid identifier(s): ${invalidIdentifiers.join(', ')}. Use QIDs/PIDs (for example Q1339), or pick a suggestion.`);
+            return;
+        }
 
         const languages = languagesInput
             ? languagesInput.split(',').map(s => s.trim()).filter(s => s.length > 0)

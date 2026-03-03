@@ -31,6 +31,8 @@ jobs:
         run: |
           mkdir -p _site
           cp -r mlscores/web/static/wasm/* _site/
+          mkdir -p _site/shared
+          cp mlscores/web/static/shared/entity-suggest.js _site/shared/
           touch _site/.nojekyll
 
       - name: Upload Pages artifact
