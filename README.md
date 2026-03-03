@@ -50,6 +50,35 @@ pip install -r requirements-dev.txt
 pip install -r requirements-web.txt
 ```
 
+## Quick Start
+
+### CLI (core)
+
+```bash
+pip install .
+python3 -m mlscores Q42 -l en fr es
+```
+
+### FastAPI Web UI
+
+```bash
+pip install ".[web]"
+python3 -m mlscores --web
+```
+
+Open:
+- UI: `http://127.0.0.1:8000/`
+- API docs: `http://127.0.0.1:8000/api/docs`
+
+### Browser-Only WASM UI (Pyodide)
+
+When FastAPI is running locally:
+- `http://127.0.0.1:8000/static/wasm/index.html`
+
+On GitHub Pages:
+- Deploy via `.github/workflows/deploy-pages.yml`
+- Open your Pages URL after workflow completion
+
 ## Usage
 
 To generate multilinguality scores, use the following command:
@@ -188,6 +217,14 @@ The package generates three types of output:
 * **Combined Language Percentages for property label and property value labels**: A table showing the combined percentage of property labels and property value labels available in each specified language.
 * **Missing translations** (optional): A table showing list of properties and property values missing translation.
 
+### Language Support
+
+`mlscores` supports any language code returned by the target Wikibase labels (typically ISO 639-1/639-3 codes).
+
+- For users: pass languages via `-l` in CLI or the `languages` field in the web UI/API.
+- For maintainers: adding a *new language* generally does **not** require backend code changes; the score logic is language-agnostic.
+- Optional UX enhancement: if you want a curated language picker, that would be a UI-only change.
+
 ## Features
 
 * Supports multiple language codes
@@ -210,6 +247,18 @@ The package generates three types of output:
 Optional dependencies:
 * For web interface: `fastapi`, `uvicorn`, `pydantic`
 * For development: `pytest`, `pytest-cov`
+
+## Onboarding and Extension
+
+For new contributors and maintainers, see:
+- `ONBOARDING.md`
+
+It includes:
+- local setup and test workflow
+- project structure overview
+- how to add or expose new languages
+- how to add endpoint presets
+- how to update shared SPARQL query builders used by FastAPI and WASM
 
 ## Contributing
 

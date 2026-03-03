@@ -99,6 +99,21 @@ async function initPyodideRuntime() {
   setStatus("Initializing Pyodide runtime...");
   state.pyodide = await loadPyodide();
 
+  setStatus("Loading shared query builders...");
+  const buildersResponse = await fetch("./query_builders.py");
+  if (!buildersResponse.ok) {
+    throw new Error("Failed to load query_builders.py");
+  }
+  const buildersCode = await buildersResponse.text();
+  state.pyodide.globals.set("query_builders_code", buildersCode);
+  await state.pyodide.runPythonAsync(`
+import sys
+import types
+_mod = types.ModuleType("query_builders")
+exec(query_builders_code, _mod.__dict__)
+sys.modules["query_builders"] = _mod
+`);
+
   setStatus("Loading mlscores WASM module...");
   const response = await fetch("./mlscores_wasm.py");
   if (!response.ok) {

@@ -3,6 +3,13 @@ import urllib.parse
 from typing import Dict, List, Optional, Set, Tuple
 
 from pyodide.http import pyfetch
+from query_builders import (
+    build_properties_and_values_query,
+    build_qualifier_properties_and_values_query,
+    build_reference_properties_and_values_query,
+    build_property_labels_query,
+    build_value_labels_query,
+)
 
 BATCH_SIZE = 25
 
@@ -12,9 +19,6 @@ ITEM_PREFIX = "http://www.wikidata.org/entity/Q"
 
 PropertyTuple = Tuple[str, str, str]
 
-
-def _chunk(items: List[str], size: int) -> List[List[str]]:
-    return [items[i : i + size] for i in range(0, len(items), size)]
 
 
 async def sparql_query(endpoint: str, query: str) -> Dict:
@@ -35,44 +39,17 @@ async def sparql_query(endpoint: str, query: str) -> Dict:
 
 
 async def get_properties_and_values(item_id: str, endpoint: str) -> Dict:
-    query = f"""
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    SELECT ?property ?value WHERE {{
-      wd:{item_id} ?property ?value .
-    }}
-    """
+    query = build_properties_and_values_query(item_id)
     return await sparql_query(endpoint, query)
 
 
 async def get_qualifier_properties_and_values(item_id: str, endpoint: str) -> Dict:
-    query = f"""
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    SELECT DISTINCT ?property ?value WHERE {{
-      wd:{item_id} ?p ?statement .
-      ?statement ?pq ?qualifierValue .
-      ?qualifierProperty wikibase:qualifier ?pq .
-      BIND(?qualifierProperty AS ?property)
-      BIND(?qualifierValue AS ?value)
-    }}
-    """
+    query = build_qualifier_properties_and_values_query(item_id)
     return await sparql_query(endpoint, query)
 
 
 async def get_reference_properties_and_values(item_id: str, endpoint: str) -> Dict:
-    query = f"""
-    PREFIX wd: <http://www.wikidata.org/entity/>
-    PREFIX wikibase: <http://wikiba.se/ontology#>
-    PREFIX prov: <http://www.w3.org/ns/prov#>
-    SELECT DISTINCT ?property ?value WHERE {{
-      wd:{item_id} ?p ?statement .
-      ?statement prov:wasDerivedFrom ?referenceNode .
-      ?referenceNode ?pr ?referenceValue .
-      ?referenceProperty wikibase:reference ?pr .
-      BIND(?referenceProperty AS ?property)
-      BIND(?referenceValue AS ?value)
-    }}
-    """
+    query = build_reference_properties_and_values_query(item_id)
     return await sparql_query(endpoint, query)
 
 
@@ -80,20 +57,9 @@ async def get_property_labels(property_uris: List[str], endpoint: str) -> List[P
     filtered = sorted({uri for uri in property_uris if uri.startswith(PROPERTY_PREFIX)})
     rows = []
 
-    for batch in _chunk(filtered, BATCH_SIZE):
-        values = " ".join([f"(<{uri}>)" for uri in batch])
-        query = f"""
-        PREFIX wikibase: <http://wikiba.se/ontology#>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?p ?propertyLabel ?propertyLabelLang WHERE {{
-          VALUES (?p) {{ {values} }}
-          OPTIONAL {{
-            ?property wikibase:directClaim ?p ;
-                      rdfs:label ?propertyLabel .
-            BIND(LANG(?propertyLabel) AS ?propertyLabelLang)
-          }}
-        }}
-        """
+    for i in range(0, len(filtered), BATCH_SIZE):
+        batch = filtered[i : i + BATCH_SIZE]
+        query = build_property_labels_query(batch)
         data = await sparql_query(endpoint, query)
         rows.extend(data.get("results", {}).get("bindings", []))
 
@@ -111,19 +77,9 @@ async def get_value_labels(value_uris: List[str], endpoint: str) -> List[Propert
     filtered = sorted({uri for uri in value_uris if uri.startswith(ITEM_PREFIX)})
     rows = []
 
-    for batch in _chunk(filtered, BATCH_SIZE):
-        values = " ".join([f"(<{uri}>)" for uri in batch])
-        query = f"""
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?v ?valueLabel ?valueLabelLang WHERE {{
-          VALUES (?v) {{ {values} }}
-          OPTIONAL {{
-            FILTER(isIRI(?v))
-            ?v rdfs:label ?valueLabel .
-            BIND(LANG(?valueLabel) AS ?valueLabelLang)
-          }}
-        }}
-        """
+    for i in range(0, len(filtered), BATCH_SIZE):
+        batch = filtered[i : i + BATCH_SIZE]
+        query = build_value_labels_query(batch)
         data = await sparql_query(endpoint, query)
         rows.extend(data.get("results", {}).get("bindings", []))
 

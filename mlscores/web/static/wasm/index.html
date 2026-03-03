@@ -9,32 +9,54 @@
 </head>
 <body>
   <main class="container">
-    <h1>mlscores WASM</h1>
-    <p class="subtitle">Browser-only multilinguality scoring using Pyodide (no FastAPI required).</p>
+    <header class="hero card">
+      <h1>mlscores WASM</h1>
+      <p class="subtitle">Browser-only multilinguality scoring with Pyodide and SPARQL.</p>
+      <div class="docs-links">
+        <a href="https://github.com/johnsamuelwrites/mlscores" target="_blank" rel="noopener">Project</a>
+        <a href="https://github.com/johnsamuelwrites/mlscores/blob/main/README.md" target="_blank" rel="noopener">README</a>
+        <a href="https://github.com/johnsamuelwrites/mlscores/blob/main/USAGE.md" target="_blank" rel="noopener">Usage</a>
+        <a href="https://github.com/johnsamuelwrites/mlscores/blob/main/ONBOARDING.md" target="_blank" rel="noopener">Onboarding</a>
+        <a href="../index.html">FastAPI UI</a>
+      </div>
+    </header>
 
-    <form id="score-form" class="card">
-      <label for="identifiers">Wikidata item IDs</label>
-      <input id="identifiers" type="text" placeholder="Q42, Q5" required>
+    <section class="grid">
+      <form id="score-form" class="card panel">
+        <h2>Run Analysis</h2>
 
-      <label for="languages">Languages (optional)</label>
-      <input id="languages" type="text" placeholder="en, fr, es">
+        <label for="identifiers">Wikidata item IDs</label>
+        <input id="identifiers" type="text" placeholder="Q42, Q5" required>
 
-      <label for="endpoint">SPARQL endpoint</label>
-      <input id="endpoint" type="url" value="https://query.wikidata.org/sparql" required>
+        <label for="languages">Languages (optional)</label>
+        <input id="languages" type="text" placeholder="en, fr, es">
 
-      <label class="inline">
-        <input id="include-missing" type="checkbox">
-        Include missing translations
-      </label>
+        <label for="endpoint">SPARQL endpoint</label>
+        <input id="endpoint" type="url" value="https://query.wikidata.org/sparql" required>
 
-      <button id="submit-btn" type="submit">Calculate</button>
-    </form>
+        <label class="inline">
+          <input id="include-missing" type="checkbox">
+          Include missing translations
+        </label>
+
+        <button id="submit-btn" type="submit">Calculate</button>
+      </form>
+
+      <aside class="card panel help">
+        <h2>Getting Started</h2>
+        <ol>
+          <li>Enter one or more item IDs (for example, `Q42`).</li>
+          <li>Optionally add comma-separated language codes.</li>
+          <li>Keep default endpoint unless you need another Wikibase.</li>
+          <li>Run and inspect percentages plus missing translations.</li>
+        </ol>
+        <p class="note">Note: browser CORS and endpoint rate limits still apply in WASM mode.</p>
+      </aside>
+    </section>
 
     <section id="status" class="card">Loading Pyodide...</section>
     <section id="error" class="card hidden"></section>
     <section id="results" class="card hidden"></section>
-
-    <p class="footer-link"><a href="../index.html">Open FastAPI UI</a></p>
   </main>
 
   <script src="./app.js"></script>

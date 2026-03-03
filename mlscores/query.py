@@ -23,6 +23,21 @@ from .constants import (
     DEFAULT_NO_LABEL,
     DEFAULT_UNKNOWN_LANGUAGE,
 )
+import importlib.util
+from pathlib import Path
+
+_BUILDERS_PATH = Path(__file__).parent / "web" / "static" / "wasm" / "query_builders.py"
+_SPEC = importlib.util.spec_from_file_location("mlscores_query_builders", _BUILDERS_PATH)
+if _SPEC is None or _SPEC.loader is None:
+    raise ImportError(f"Unable to load shared query builders from {_BUILDERS_PATH}")
+_query_builders = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_query_builders)
+
+build_properties_and_values_query = _query_builders.build_properties_and_values_query
+build_qualifier_properties_and_values_query = _query_builders.build_qualifier_properties_and_values_query
+build_reference_properties_and_values_query = _query_builders.build_reference_properties_and_values_query
+build_property_labels_query = _query_builders.build_property_labels_query
+build_value_labels_query = _query_builders.build_value_labels_query
 
 # Wikidata SPARQL endpoint
 user_agent = "WDQS-mlscores Python/%s.%s" % (sys.version_info[0], sys.version_info[1])
@@ -44,13 +59,7 @@ def get_properties_and_values(item_id: str) -> Optional[Dict[str, Any]]:
     Notes:
         This function uses the `safe_query` function to execute the SPARQL query with retry mechanism.
     """
-    sparql.setQuery(
-        f"""
-    SELECT?property ?value WHERE {{
-      wd:{item_id}?property ?value.
-    }}
-    """
-    )
+    sparql.setQuery(build_properties_and_values_query(item_id))
     sparql.setReturnFormat(JSON)
 
     # Execute the query with retry mechanism
@@ -72,17 +81,7 @@ def get_qualifier_properties_and_values(item_id: str) -> Optional[Dict[str, Any]
     Notes:
         This function uses the `safe_query` function to execute the SPARQL query with retry mechanism.
     """
-    sparql.setQuery(
-        f"""
-        SELECT DISTINCT ?property ?value WHERE {{
-              wd:{item_id} ?p ?statement.
-              ?statement ?pq ?qualifierValue.
-              ?qualifierProperty wikibase:qualifier ?pq.
-              BIND(?qualifierProperty AS ?property)
-              BIND(?qualifierValue AS ?value)
-        }}
-    """
-    )
+    sparql.setQuery(build_qualifier_properties_and_values_query(item_id))
     sparql.setReturnFormat(JSON)
 
     # Execute the query with retry mechanism
@@ -104,18 +103,7 @@ def get_reference_properties_and_values(item_id: str) -> Optional[Dict[str, Any]
     Notes:
         This function uses the `safe_query` function to execute the SPARQL query with retry mechanism.
     """
-    sparql.setQuery(
-        f"""
-        SELECT DISTINCT ?property ?value WHERE {{
-              wd:{item_id} ?p ?statement.
-              ?statement prov:wasDerivedFrom ?referenceNode.
-              ?referenceNode ?pr ?referenceValue.
-              ?referenceProperty wikibase:reference ?pr.
-              BIND(?referenceProperty AS ?property)
-              BIND(?referenceValue AS ?value)
-        }}
-    """
-    )
+    sparql.setQuery(build_reference_properties_and_values_query(item_id))
     sparql.setReturnFormat(JSON)
 
     # Execute the query with retry mechanism
@@ -156,21 +144,8 @@ def get_property_labels(property_uris: List[str]) -> List[Tuple[str, str, str]]:
         # Get the current batch of property URIs
         batch = filtered_uris[i : i + BATCH_SIZE]
 
-        # Create a VALUES clause for the SPARQL query
-        values_clause = " ".join([f"(<{uri}>)" for uri in batch])
-
         # Create the SPARQL query
-        query = f"""
-        SELECT?p?propertyLabel?propertyLabelLang WHERE {{
-          VALUES (?p) {{ {values_clause} }}
-
-          OPTIONAL {{
-           ?property wikibase:directClaim?p;
-                      rdfs:label?propertyLabel.
-            BIND(LANG(?propertyLabel) AS?propertyLabelLang).
-          }}
-        }}
-        """
+        query = build_property_labels_query(batch)
 
         # Execute the query with retry mechanism
         sparql.setQuery(query)
@@ -223,21 +198,8 @@ def get_value_labels(value_uris: List[str]) -> List[Tuple[str, str, str]]:
         # Get the current batch of value URIs
         batch = filtered_uris[i : i + BATCH_SIZE]
 
-        # Create a VALUES clause for the SPARQL query
-        values_clause = " ".join([f"(<{uri}>)" for uri in batch])
-
         # Create the SPARQL query
-        query = f"""
-        SELECT?v?valueLabel?valueLabelLang WHERE {{
-          VALUES (?v) {{ {values_clause} }}
-
-          OPTIONAL {{
-            FILTER(isIRI(?v)).
-           ?v rdfs:label?valueLabel.
-            BIND(LANG(?valueLabel) AS?valueLabelLang).
-          }}
-        }}
-        """
+        query = build_value_labels_query(batch)
 
         # Execute the query with retry mechanism
         sparql.setQuery(query)

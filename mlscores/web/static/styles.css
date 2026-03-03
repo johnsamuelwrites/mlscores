@@ -1300,3 +1300,28 @@ footer {
                 color var(--transition-normal),
                 box-shadow var(--transition-normal);
 }
+
+
+.docs-links {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0.5rem 0 1.25rem;
+}
+
+.docs-links a {
+    display: inline-block;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    border: 1px solid rgba(124, 58, 237, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+}
+
+.docs-links a:hover {
+    border-color: rgba(0, 245, 255, 0.6);
+    transform: translateY(-1px);
+}
