@@ -4,7 +4,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from pyodide.http import pyfetch
 
-BATCH_SIZE = 100
+BATCH_SIZE = 25
 
 PROPERTY_PREFIX = "http://www.wikidata.org/prop/direct/"
 ENTITY_PREFIX = "http://www.wikidata.org/entity/"
@@ -18,12 +18,15 @@ def _chunk(items: List[str], size: int) -> List[List[str]]:
 
 
 async def sparql_query(endpoint: str, query: str) -> Dict:
-    params = urllib.parse.urlencode({"query": query, "format": "json"})
-    url = f"{endpoint}?{params}" if "?" not in endpoint else f"{endpoint}&{params}"
+    body = urllib.parse.urlencode({"query": query, "format": "json"})
     response = await pyfetch(
-        url,
-        method="GET",
-        headers={"Accept": "application/sparql-results+json"},
+        endpoint,
+        method="POST",
+        headers={
+            "Accept": "application/sparql-results+json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        },
+        body=body,
     )
     if not response.ok:
         text = await response.string()
