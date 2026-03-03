@@ -26,7 +26,11 @@
         <h2>Run Analysis</h2>
 
         <label for="identifiers">Wikidata item IDs</label>
-        <input id="identifiers" type="text" placeholder="Q42, Q5" required>
+        <div class="input-wrapper">
+          <input id="identifiers" type="text" placeholder="Q42, Q5" required autocomplete="off">
+          <div id="identifier-suggestions" class="suggestions-list hidden" role="listbox" aria-label="Identifier suggestions"></div>
+        </div>
+        <p class="field-help">Tip: type a label like "Bach" and pick the matching QID.</p>
 
         <label for="languages">Languages (optional)</label>
         <input id="languages" type="text" placeholder="en, fr, es">

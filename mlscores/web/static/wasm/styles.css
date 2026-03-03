@@ -71,6 +71,69 @@ input, button {
   border: 1px solid var(--line);
 }
 
+.input-wrapper {
+  position: relative;
+}
+
+.field-help {
+  margin: 6px 0 2px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.suggestions-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+}
+
+.suggestion-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #ffffff;
+  text-align: left;
+  padding: 9px 10px;
+  cursor: pointer;
+}
+
+.suggestion-item:last-child {
+  border-bottom: 0;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+  background: #f1f5f9;
+}
+
+.suggestion-main {
+  display: flex;
+  gap: 8px;
+}
+
+.suggestion-id {
+  color: #1d4ed8;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.suggestion-label {
+  font-weight: 600;
+}
+
+.suggestion-description {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 button {
   margin-top: 12px;
   font-weight: 700;
