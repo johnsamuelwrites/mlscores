@@ -14,8 +14,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const retryBtn = document.getElementById('retry-btn');
     const exportJsonBtn = document.getElementById('export-json');
     const themeToggle = document.getElementById('theme-toggle');
+    const identifiersInput = document.getElementById('identifiers');
+    const suggestionsList = document.getElementById('identifier-suggestions');
 
     let lastResultsData = null;
+    let suggestions = [];
+    let activeSuggestionIndex = -1;
+    let suggestionRequestId = 0;
+    let suggestionDebounceTimer = null;
 
     // Endpoint configurations for different Wikibase instances
     const ENDPOINT_CONFIGS = {
@@ -85,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     endpointSelect?.addEventListener('change', function() {
         const selectedEndpoint = this.value;
+        hideSuggestions();
 
         if (selectedEndpoint === 'custom') {
             customEndpointGroup?.classList.remove('hidden');
@@ -95,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     customEndpointUrl?.addEventListener('change', function() {
+        hideSuggestions();
         if (this.value) {
             // For custom endpoints, try to derive entity URL from SPARQL endpoint
             const sparqlUrl = this.value;
@@ -103,6 +111,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 sparqlEndpoint: sparqlUrl,
                 entityBaseUrl: deriveEntityUrlFromSparql(sparqlUrl)
             };
+        }
+    });
+
+    identifiersInput?.addEventListener('input', function() {
+        const value = this.value;
+        const caretPos = this.selectionStart ?? value.length;
+        const tokenInfo = getCurrentToken(value, caretPos);
+
+        if (suggestionDebounceTimer) {
+            clearTimeout(suggestionDebounceTimer);
+        }
+
+        if (tokenInfo.token.length < 2 || isLikelyIdentifier(tokenInfo.token)) {
+            hideSuggestions();
+            return;
+        }
+
+        suggestionDebounceTimer = setTimeout(() => {
+            fetchIdentifierSuggestions(tokenInfo.token);
+        }, 220);
+    });
+
+    identifiersInput?.addEventListener('keydown', function(e) {
+        if (!suggestions.length || suggestionsList?.classList.contains('hidden')) {
+            return;
+        }
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            const nextIndex = activeSuggestionIndex + 1 >= suggestions.length ? 0 : activeSuggestionIndex + 1;
+            setActiveSuggestion(nextIndex);
+            return;
+        }
+
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            const previousIndex = activeSuggestionIndex - 1 < 0 ? suggestions.length - 1 : activeSuggestionIndex - 1;
+            setActiveSuggestion(previousIndex);
+            return;
+        }
+
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            if (activeSuggestionIndex >= 0) {
+                e.preventDefault();
+                selectSuggestion(activeSuggestionIndex);
+            }
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            hideSuggestions();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!suggestionsList || !identifiersInput) {
+            return;
+        }
+        const clickedInsideSuggestions = suggestionsList.contains(e.target);
+        const clickedInput = identifiersInput.contains(e.target);
+        if (!clickedInsideSuggestions && !clickedInput) {
+            hideSuggestions();
         }
     });
 
@@ -128,6 +198,141 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function isLikelyIdentifier(token) {
+        return /^[QPM]\d+$/i.test(token.trim());
+    }
+
+    function getCurrentToken(value, caretPos) {
+        const before = value.slice(0, caretPos);
+        const tokenStart = before.lastIndexOf(',') + 1;
+        const after = value.slice(caretPos);
+        const nextComma = after.indexOf(',');
+        const tokenEnd = nextComma === -1 ? value.length : caretPos + nextComma;
+
+        const rawToken = value.slice(tokenStart, tokenEnd);
+        const leadingWhitespace = rawToken.match(/^\s*/)?.[0] || '';
+        const trailingWhitespace = rawToken.match(/\s*$/)?.[0] || '';
+        const token = rawToken.trim();
+
+        return {
+            token,
+            start: tokenStart + leadingWhitespace.length,
+            end: tokenEnd - trailingWhitespace.length,
+        };
+    }
+
+    function hideSuggestions() {
+        suggestions = [];
+        activeSuggestionIndex = -1;
+        if (!suggestionsList) {
+            return;
+        }
+        suggestionsList.innerHTML = '';
+        suggestionsList.classList.add('hidden');
+    }
+
+    function renderSuggestions(items) {
+        if (!suggestionsList || !items.length) {
+            hideSuggestions();
+            return;
+        }
+
+        suggestions = items;
+        activeSuggestionIndex = -1;
+        suggestionsList.innerHTML = '';
+
+        items.forEach((item, index) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'suggestion-item';
+            button.setAttribute('role', 'option');
+            button.setAttribute('data-index', index.toString());
+            button.innerHTML = `
+                <div class="suggestion-main">
+                    <span class="suggestion-id">${escapeHtml(item.id)}</span>
+                    <span class="suggestion-label">${escapeHtml(item.label || item.id)}</span>
+                </div>
+                ${item.description ? `<div class="suggestion-description">${escapeHtml(item.description)}</div>` : ''}
+            `;
+            button.addEventListener('click', () => {
+                selectSuggestion(index);
+            });
+            suggestionsList.appendChild(button);
+        });
+
+        suggestionsList.classList.remove('hidden');
+    }
+
+    function setActiveSuggestion(index) {
+        if (!suggestionsList) {
+            return;
+        }
+
+        const buttons = suggestionsList.querySelectorAll('.suggestion-item');
+        buttons.forEach(btn => btn.classList.remove('active'));
+
+        if (index >= 0 && index < buttons.length) {
+            activeSuggestionIndex = index;
+            buttons[index].classList.add('active');
+        }
+    }
+
+    function selectSuggestion(index) {
+        if (!identifiersInput || index < 0 || index >= suggestions.length) {
+            return;
+        }
+
+        const currentValue = identifiersInput.value;
+        const caretPos = identifiersInput.selectionStart ?? currentValue.length;
+        const tokenInfo = getCurrentToken(currentValue, caretPos);
+        const selectedId = suggestions[index].id;
+        let updatedValue = currentValue.slice(0, tokenInfo.start) + selectedId + currentValue.slice(tokenInfo.end);
+
+        const insertionPoint = tokenInfo.start + selectedId.length;
+        if (tokenInfo.end === currentValue.length) {
+            updatedValue = `${updatedValue.trimEnd()}, `;
+            identifiersInput.value = updatedValue;
+            identifiersInput.focus();
+            identifiersInput.setSelectionRange(updatedValue.length, updatedValue.length);
+        } else {
+            identifiersInput.value = updatedValue;
+            identifiersInput.focus();
+            identifiersInput.setSelectionRange(insertionPoint, insertionPoint);
+        }
+
+        hideSuggestions();
+    }
+
+    async function fetchIdentifierSuggestions(queryText) {
+        const endpointValue = endpointSelect?.value || 'wikidata';
+        if (endpointValue === 'custom') {
+            hideSuggestions();
+            return;
+        }
+
+        const thisRequestId = ++suggestionRequestId;
+        try {
+            const params = new URLSearchParams({
+                q: queryText,
+                endpoint: endpointValue,
+                limit: '8',
+            });
+            const response = await fetch(`/api/search/entities?${params.toString()}`);
+            if (!response.ok) {
+                hideSuggestions();
+                return;
+            }
+
+            const data = await response.json();
+            if (thisRequestId !== suggestionRequestId) {
+                return;
+            }
+            renderSuggestions(data.results || []);
+        } catch {
+            hideSuggestions();
+        }
+    }
+
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         await calculateScores();
@@ -145,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function calculateScores() {
         // Get form values
-        const identifiersInput = document.getElementById('identifiers').value;
+        const identifiersInputValue = document.getElementById('identifiers').value;
         const languagesInput = document.getElementById('languages').value;
         const includeMissing = document.getElementById('include-missing').checked;
         const endpointValue = document.getElementById('endpoint')?.value || 'wikidata';
@@ -163,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Parse inputs
-        const identifiers = identifiersInput
+        const identifiers = identifiersInputValue
             .split(',')
             .map(s => s.trim())
             .filter(s => s.length > 0);

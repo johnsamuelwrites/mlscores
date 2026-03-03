@@ -110,3 +110,22 @@ class HealthResponse(BaseModel):
     version: str
     cache_enabled: bool
     endpoint: str
+
+
+class EntitySearchResult(BaseModel):
+    """Single entity search suggestion."""
+
+    id: str = Field(..., description="Entity identifier (e.g., Q42)")
+    label: str = Field(..., description="Primary label")
+    description: Optional[str] = Field(None, description="Entity description")
+    url: Optional[str] = Field(None, description="Canonical entity URL")
+
+
+class EntitySearchResponse(BaseModel):
+    """Response model for entity search suggestions."""
+
+    success: bool = True
+    query: str
+    endpoint: str
+    limit: int
+    results: List[EntitySearchResult] = Field(default_factory=list)

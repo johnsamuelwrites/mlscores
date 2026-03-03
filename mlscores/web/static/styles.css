@@ -498,6 +498,63 @@ form.glass-card {
     font-size: 0.85rem;
 }
 
+.suggestions-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.suggestion-item {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.suggestion-item:last-child {
+    border-bottom: 0;
+}
+
+.suggestion-item:hover,
+.suggestion-item.active {
+    background: var(--table-row-hover);
+}
+
+.suggestion-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.suggestion-id {
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+    font-size: 0.85rem;
+}
+
+.suggestion-label {
+    font-weight: 600;
+}
+
+.suggestion-description {
+    margin-top: 4px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.3;
+}
+
 /* Toggle Switch */
 .checkbox-group {
     margin-top: 8px;

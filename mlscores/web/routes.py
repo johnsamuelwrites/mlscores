@@ -6,6 +6,9 @@
 
 """FastAPI route definitions."""
 
+import json
+import urllib.parse
+import urllib.request
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 
@@ -17,6 +20,8 @@ from .models import (
     MissingTranslations,
     ErrorResponse,
     HealthResponse,
+    EntitySearchResponse,
+    EntitySearchResult,
 )
 from ..query import (
     get_properties_and_values,
@@ -35,6 +40,11 @@ from ..cache import get_cache
 from ..constants import DEFAULT_SPARQL_ENDPOINT
 
 router = APIRouter()
+
+WIKIBASE_ENTITY_SEARCH_APIS = {
+    "wikidata": "https://www.wikidata.org/w/api.php",
+    "commons": "https://commons.wikimedia.org/w/api.php",
+}
 
 
 @router.get("/health", response_model=HealthResponse, tags=["System"])
@@ -82,6 +92,77 @@ async def calculate_scores(request: MultilingualityRequest):
             )
 
     return MultilingualityResponse(success=True, results=results)
+
+
+@router.get(
+    "/search/entities",
+    response_model=EntitySearchResponse,
+    responses={400: {"model": ErrorResponse}, 502: {"model": ErrorResponse}},
+    tags=["Search"],
+    summary="Search entities by label and return IDs",
+)
+async def search_entities(
+    q: str = Query(..., min_length=2, description="Search term (e.g., Bach)"),
+    endpoint: str = Query(
+        "wikidata", description="Named endpoint preset (wikidata or commons)"
+    ),
+    language: str = Query("en", description="Search language code"),
+    limit: int = Query(8, ge=1, le=20, description="Maximum suggestions to return"),
+):
+    """Search entity suggestions using Wikibase wbsearchentities API."""
+    endpoint_key = endpoint.lower().strip()
+    api_url = WIKIBASE_ENTITY_SEARCH_APIS.get(endpoint_key)
+    if not api_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Entity search supports only 'wikidata' and 'commons' endpoints",
+        )
+
+    params = {
+        "action": "wbsearchentities",
+        "search": q.strip(),
+        "language": language,
+        "limit": str(limit),
+        "format": "json",
+        "origin": "*",
+    }
+    url = f"{api_url}?{urllib.parse.urlencode(params)}"
+
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "mlscores/0.1.0 (entity-search)",
+            "Accept": "application/json",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Unable to fetch entity suggestions: {str(exc)}"
+        )
+
+    raw_results = payload.get("search", [])
+    suggestions = [
+        EntitySearchResult(
+            id=item.get("id", ""),
+            label=item.get("label") or item.get("id", ""),
+            description=item.get("description"),
+            url=item.get("concepturi"),
+        )
+        for item in raw_results
+        if item.get("id")
+    ]
+
+    return EntitySearchResponse(
+        success=True,
+        query=q.strip(),
+        endpoint=endpoint_key,
+        limit=limit,
+        results=suggestions,
+    )
 
 
 @router.get(
