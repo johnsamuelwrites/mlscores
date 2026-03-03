@@ -11,6 +11,7 @@ const submitBtn = document.getElementById("submit-btn");
 const identifiersInput = document.getElementById("identifiers");
 const endpointInput = document.getElementById("endpoint");
 const suggestionsList = document.getElementById("identifier-suggestions");
+let identifierAutocomplete = null;
 
 function setStatus(text) {
   statusEl.textContent = text;
@@ -46,6 +47,80 @@ function inferEntitySearchApi(endpointUrl) {
     return "https://commons.wikimedia.org/w/api.php";
   }
   return "https://www.wikidata.org/w/api.php";
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+async function ensureSuggestModuleLoaded() {
+  if (window.MlscoresEntitySuggest) {
+    return true;
+  }
+
+  const candidates = [
+    "../shared/entity-suggest.js",
+    "./shared/entity-suggest.js",
+    "/static/shared/entity-suggest.js",
+    "/shared/entity-suggest.js",
+  ];
+
+  for (const src of candidates) {
+    try {
+      await loadScript(src);
+      if (window.MlscoresEntitySuggest) {
+        return true;
+      }
+    } catch {
+      // Try next path.
+    }
+  }
+
+  console.error("Failed to load shared autocomplete module from known paths.");
+  return false;
+}
+
+function initIdentifierAutocomplete() {
+  if (!window.MlscoresEntitySuggest) {
+    return;
+  }
+
+  identifierAutocomplete = window.MlscoresEntitySuggest.attachAutocomplete({
+    inputEl: identifiersInput,
+    suggestionsEl: suggestionsList,
+    fetchSuggestions: async (queryText) => {
+      const apiUrl = inferEntitySearchApi(endpointInput?.value || "");
+      const params = new URLSearchParams({
+        action: "wbsearchentities",
+        search: queryText,
+        language: "en",
+        limit: "8",
+        format: "json",
+        origin: "*",
+      });
+      const response = await fetch(`${apiUrl}?${params.toString()}`);
+      if (!response.ok) {
+        return [];
+      }
+
+      const payload = await response.json();
+      return (payload.search || [])
+        .filter((item) => item.id)
+        .map((item) => ({
+          id: item.id,
+          label: item.label || item.id,
+          description: item.description || "",
+        }));
+    },
+  });
+
+  endpointInput?.addEventListener("change", () => identifierAutocomplete?.hide());
 }
 
 function renderPercentagesTable(title, percentages) {
@@ -198,37 +273,13 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-const identifierAutocomplete = window.MlscoresEntitySuggest?.attachAutocomplete({
-  inputEl: identifiersInput,
-  suggestionsEl: suggestionsList,
-  fetchSuggestions: async (queryText) => {
-    const apiUrl = inferEntitySearchApi(endpointInput?.value || "");
-
-    const params = new URLSearchParams({
-      action: "wbsearchentities",
-      search: queryText,
-      language: "en",
-      limit: "8",
-      format: "json",
-      origin: "*",
-    });
-    const response = await fetch(`${apiUrl}?${params.toString()}`);
-    if (!response.ok) {
-      return [];
-    }
-
-    const payload = await response.json();
-    return (payload.search || [])
-      .filter((item) => item.id)
-      .map((item) => ({
-        id: item.id,
-        label: item.label || item.id,
-        description: item.description || "",
-      }));
-  },
+ensureSuggestModuleLoaded().then((loaded) => {
+  if (!loaded) {
+    console.warn("Autocomplete disabled: shared module could not be loaded.");
+    return;
+  }
+  initIdentifierAutocomplete();
 });
-
-endpointInput?.addEventListener("change", () => identifierAutocomplete?.hide());
 
 initPyodideRuntime().catch((error) => {
   setStatus("Initialization failed.");
